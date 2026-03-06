@@ -24,6 +24,7 @@ from model_loader import SeizurePredictor
 from serial_reader import SerialReader
 from emergency_service import EmergencyService
 import auth
+import json
 import models
 import resend
 resend.api_key = os.getenv("RESEND_API_KEY")
@@ -31,11 +32,13 @@ resend.api_key = os.getenv("RESEND_API_KEY")
 # Load environment variables from .env file
 load_dotenv()
 
-# Secure Initialization
-if not firebase_admin._apps:
-    cred = credentials.Certificate("key/serviceAccountKey.json")
-    firebase_admin.initialize_app(cred)
 
+firebase_creds = json.loads(os.getenv("FIREBASE_CREDENTIALS"))
+
+if not firebase_admin._apps:
+    cred = credentials.Certificate(firebase_creds)
+    firebase_admin.initialize_app(cred)
+    
 db_firestore = firestore.client()
 
 # ─────────────────────────────────────────────
