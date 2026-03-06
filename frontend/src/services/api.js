@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { auth } from '../firebase';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_URL = process.env.REACT_APP_API_URL || 'https://neuro-82e7.onrender.com';
 
 const api = axios.create({ baseURL: API_URL });
 
