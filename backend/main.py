@@ -33,7 +33,7 @@ load_dotenv()
 
 # Secure Initialization
 if not firebase_admin._apps:
-    cred = credentials.Certificate("serviceAccountKey.json")
+    cred = credentials.Certificate("key/serviceAccountKey.json")
     firebase_admin.initialize_app(cred)
 
 db_firestore = firestore.client()
@@ -105,6 +105,7 @@ async def shutdown_event():
 # Serial Broadcast Loop
 # ─────────────────────────────────────────────
 async def serial_broadcast_loop():
+    db = SessionLocal()
     """Continuously read from serial port and broadcast to all WebSocket clients."""
     while True:
         try:
@@ -423,7 +424,7 @@ async def websocket_sensor(websocket: WebSocket):
         
     try:
         while True:
-            data = await websocket.receive_text()
+            await websocket.receive_text()
             try:
                 msg = json.loads(data)
                 if msg.get("type") == "location":
@@ -461,3 +462,9 @@ async def health():
         "feature_names": predictor.get_feature_names(),
         "timestamp": datetime.utcnow().isoformat()
     }
+
+if __name__ == "__main__":
+    import uvicorn
+    import os
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
