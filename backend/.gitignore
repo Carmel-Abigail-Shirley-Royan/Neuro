@@ -1,0 +1,20 @@
+# Environment Variables (Crucial for Resend/Firebase keys)
+.env
+
+# Python Bytecode
+__pycache__/
+*.py[cod]
+
+# Local Database (Avoid pushing your test contacts/history)
+*.db
+*.sqlite3
+
+# Virtual Environment
+venv/
+env/
+.venv/
+
+# backend/.gitignore
+serviceAccountKey.json
+key/
+backend/serviceAccountKey.json

@@ -1,0 +1,131 @@
+/* NeuroGuard - Medical Grade Dark Theme */
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500&family=Exo+2:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg-primary: #030b18;
+  --bg-secondary: #061428;
+  --bg-card: #0a1f3a;
+  --bg-card-hover: #0d2545;
+  --border: #1a3a5c;
+  --border-glow: #0d7fff33;
+
+  --cyan: #00d4ff;
+  --cyan-dim: #00d4ff44;
+  --cyan-glow: #00d4ff22;
+  --green: #00ff88;
+  --green-dim: #00ff8833;
+  --red: #ff3366;
+  --red-dim: #ff336633;
+  --red-glow: #ff336622;
+  --amber: #ffaa00;
+  --amber-dim: #ffaa0033;
+  --purple: #8b5cf6;
+
+  --text-primary: #e0f0ff;
+  --text-secondary: #7aa8cc;
+  --text-muted: #3a6080;
+
+  --font-display: 'Rajdhani', sans-serif;
+  --font-body: 'Exo 2', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --radius: 8px;
+  --radius-lg: 16px;
+  --shadow-card: 0 4px 24px rgba(0,0,0,0.5);
+  --shadow-glow: 0 0 30px rgba(0,212,255,0.1);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  height: 100%;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--cyan-dim); }
+
+/* Animations */
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes glitch {
+  0%, 100% { transform: translate(0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(2px, -2px); }
+  60% { transform: translate(-1px, 1px); }
+  80% { transform: translate(1px, -1px); }
+}
+
+@keyframes seizureAlert {
+  0%, 100% { background: var(--bg-card); border-color: var(--red); }
+  50% { background: var(--red-dim); border-color: var(--red); box-shadow: 0 0 40px var(--red-dim); }
+}
+
+/* Global utility classes */
+.glass {
+  background: rgba(10, 31, 58, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+}
+
+.text-cyan { color: var(--cyan); }
+.text-green { color: var(--green); }
+.text-red { color: var(--red); }
+.text-amber { color: var(--amber); }
+.text-muted { color: var(--text-muted); }
+.font-mono { font-family: var(--font-mono); }
+.font-display { font-family: var(--font-display); }
+
+/* Leaflet map override */
+.leaflet-container {
+  background: var(--bg-secondary) !important;
+  border-radius: var(--radius);
+}
