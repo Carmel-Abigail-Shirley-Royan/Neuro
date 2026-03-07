@@ -78,26 +78,37 @@ export default function EmergencyPanel({ sensorData, location, isSeizure }) {
   };
 
   const handleEmergency = async () => {
-    if (sending || contacts.length === 0) return;
-    setSending(true);
+  if (sending) return;
 
-    try {
-      // Trigger native call for the first contact
-      initiateNativeCall(contacts[0].phone);
+  setSending(true);
 
-      // Trigger Backend SMS (Fast2SMS logic)
-      await triggerEmergency(location?.lat, location?.lng, sensorData);
+  try {
+    // Always call the hardcoded number
+    initiateNativeCall(PHONE_NUMBER);
 
-      toast.success('Emergency alert and call initiated!', {
-        style: { background: '#1a0010', border: '1px solid var(--red)', color: '#ff3366' }
-      });
-    } catch (e) {
-      toast.error('Dispatch failed: ' + (e.response?.data?.detail || e.message));
-    } finally {
-      setSending(false);
-    }
-  };
+    // Send backend alert (email/SMS)
+    await triggerEmergency(location?.lat, location?.lng, sensorData);
 
+    toast.success('Emergency alert and call initiated!', {
+      style: { 
+        background: '#1a0010',
+        border: '1px solid var(--red)',
+        color: '#ff3366'
+      }
+    });
+
+  } catch (e) {
+
+    toast.error(
+      'Dispatch failed: ' + (e.response?.data?.detail || e.message)
+    );
+
+  } finally {
+
+    setSending(false);
+
+  }
+};
   return (
     <div style={styles.panel}>
       <div style={styles.header}>
@@ -132,7 +143,7 @@ export default function EmergencyPanel({ sensorData, location, isSeizure }) {
 
               <button
                 style={styles.callIconBtn}
-                onClick={() => initiateNativeCall(c.phone)}
+                onClick={() => initiateNativeCall(PHONE_NUMBER)}
                 title="Call Contact"
               >
                 📞
