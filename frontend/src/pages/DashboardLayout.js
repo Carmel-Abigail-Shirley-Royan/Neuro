@@ -144,7 +144,7 @@ const styles = {
   root: {
     display: 'flex',
     minHeight: '100vh',
-    overflow: 'hidden',
+    overflow: 'visible'
   },
 
   seizureOverlay: {
@@ -305,7 +305,9 @@ const styles = {
 
   main: (mobile) => ({
     flex: 1,
-    overflow: 'auto',
+    // Add margin so the content doesn't go UNDER the fixed sidebar
+    marginLeft: mobile ? 0 : 220, 
+    overflow: 'visible', 
     background: 'var(--bg-primary)',
     paddingTop: mobile ? 52 : 0,
   }),

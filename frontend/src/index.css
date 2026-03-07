@@ -42,8 +42,9 @@
 }
 
 html, body {
-  height: 100%;
-  overflow-y: auto;
+  height: auto;           /* Change from 100% to auto */
+  min-height: 100vh;      /* Use min-height instead */
+  overflow-y: auto;       /* This allows the browser scrollbar to appear */
 }
 
 body {
@@ -57,7 +58,8 @@ body {
 }
 
 #root {
-  height: 100%;
+  height: auto;           /* Change from 100% to auto */
+  min-height: 100vh;
 }
 
 /* Scrollbar */
