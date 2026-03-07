@@ -57,16 +57,6 @@ export const addContact = (name, phone) =>
 export const deleteContact = (id) =>
   api.delete(`/api/contacts/${id}`).then((res) => res.data);
 
-// EMERGENCY
-export const triggerEmergency = (latitude, longitude, sensor_data) =>
-  api
-    .post("/api/emergency/trigger", {
-      latitude,
-      longitude,
-      sensor_data,
-    })
-    .then((res) => res.data);
-
 // HISTORY
 export const getHistory = () =>
   api.get("/api/history").then((res) => res.data);
@@ -75,4 +65,21 @@ export const getHistory = () =>
 export const getHealth = () =>
   api.get("/api/health").then((res) => res.data);
 
+export const triggerEmergency = (latitude, longitude) => {
+  // 1. Get contacts from the browser's local storage
+  const contacts = JSON.parse(localStorage.getItem("contacts")) || [];
+
+  // 2. Extract just the email addresses
+  const emails = contacts.map((c) => c.phone);
+
+  // 3. Send them to your FastAPI backend
+  return api.post("/api/emergency/trigger", {
+    latitude,
+    longitude,
+    sensor_data: {
+      emails: emails // This matches the backend 'get("emails")' logic
+    }
+  }).then((res) => res.data);
+};
 export default api;
+

@@ -251,19 +251,19 @@ class EmergencyRequest(BaseModel):
 
 @app.post("/api/emergency/trigger")
 async def trigger_emergency(req: EmergencyRequest, user=Depends(get_current_user)):
-
-    contacts = load_local_contacts()
-
-    email_list = [c["phone"] for c in contacts]
+    # The frontend now sends the emails inside the 'sensor_data' object
+    email_list = req.sensor_data.get("emails", [])
 
     if not email_list:
-        return {"message": "No contacts found", "results": []}
+        print("⚠️ No emails received from frontend")
+        return {"message": "No contacts provided", "results": []}
 
     location_url = ""
-
     if req.latitude and req.longitude:
+        # Create Google Maps link
         location_url = f"https://www.google.com/maps?q={req.latitude},{req.longitude}"
 
+    # Use your working Resend logic
     results = await emergency_service.send_alerts(email_list, location_url)
 
     return {
