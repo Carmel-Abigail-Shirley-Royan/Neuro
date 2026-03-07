@@ -20,7 +20,23 @@ from database import init_db, SessionLocal
 import models
 import auth
 from emergency_service import EmergencyService
+import json
+import os
 
+CONTACTS_FILE = "local_contacts.json"
+
+def load_local_contacts():
+    if not os.path.exists(CONTACTS_FILE):
+        return []
+    with open(CONTACTS_FILE, "r") as f:
+        try:
+            return json.load(f)
+        except:
+            return []
+
+def save_local_contacts(contacts):
+    with open(CONTACTS_FILE, "w") as f:
+        json.dump(contacts, f, indent=4)
 # Firebase Init
 firebase_json = os.getenv("FIREBASE_CREDENTIALS")
 
@@ -163,46 +179,56 @@ class ContactRequest(BaseModel):
     name: str
     phone: str
 
+# @app.get("/api/contacts")
+# async def get_contacts(user=Depends(get_current_user)):
+#     db = SessionLocal()
+
+#     try:
+#         contacts = db.query(models.EmergencyContact).filter(
+#             models.EmergencyContact.user_id == user["user_id"]
+#         ).all()
+
+#         return [
+#             {"id": c.id, "name": c.name, "phone": c.phone}
+#             for c in contacts
+#         ]
+
+#     finally:
+#         db.close()
+
+# @app.post("/api/contacts")
+# async def add_contact(req: ContactRequest, user=Depends(get_current_user)):
+#     db = SessionLocal()
+#     try:
+#         # Create a new contact record
+#         new_contact = models.EmergencyContact(
+#             user_id=user["user_id"], # Links to the logged-in Firebase user
+#             name=req.name,
+#             phone=req.phone # Enter the email address (e.g., isabelroyan6@gmail.com)
+#         )
+#         db.add(new_contact)
+#         db.commit()
+#         db.refresh(new_contact)
+#         print(f"✅ Contact Saved Locally: {new_contact.name} ({new_contact.phone})")
+#         return {"id": new_contact.id, "name": new_contact.name, "phone": new_contact.phone}
+#     finally:
+#         db.close()
+
 @app.get("/api/contacts")
 async def get_contacts(user=Depends(get_current_user)):
-    db = SessionLocal()
-
-    try:
-        contacts = db.query(models.EmergencyContact).filter(
-            models.EmergencyContact.user_id == user["user_id"]
-        ).all()
-
-        return [
-            {"id": c.id, "name": c.name, "phone": c.phone}
-            for c in contacts
-        ]
-
-    finally:
-        db.close()
+    return load_local_contacts()
 
 @app.post("/api/contacts")
 async def add_contact(req: ContactRequest, user=Depends(get_current_user)):
-    db = SessionLocal()
-
-    try:
-        contact = models.EmergencyContact(
-            user_id=user["user_id"],
-            name=req.name,
-            phone=req.phone
-        )
-
-        db.add(contact)
-        db.commit()
-        db.refresh(contact)
-
-        return {
-            "id": contact.id,
-            "name": contact.name,
-            "phone": contact.phone
-        }
-
-    finally:
-        db.close()
+    contacts = load_local_contacts()
+    new_contact = {
+        "id": len(contacts) + 1,
+        "name": req.name,
+        "phone": req.phone  # You will type your email here
+    }
+    contacts.append(new_contact)
+    save_local_contacts(contacts)
+    return new_contact
 
 @app.delete("/api/contacts/{contact_id}")
 async def delete_contact(contact_id: int, user=Depends(get_current_user)):
@@ -236,29 +262,22 @@ class EmergencyRequest(BaseModel):
 
 @app.post("/api/emergency/trigger")
 async def trigger_emergency(req: EmergencyRequest, user=Depends(get_current_user)):
-    db = SessionLocal()
+    # Load from the local JSON file instead of SQLite
+    contacts = load_local_contacts()
+    
+    # Extract the emails (stored in the 'phone' field)
+    email_list = [c["phone"] for c in contacts]
+    
+    if not email_list:
+        raise HTTPException(status_code=400, detail="No contacts found in local storage")
 
-    try:
-        contacts = db.query(models.EmergencyContact).filter(
-            models.EmergencyContact.user_id == user["user_id"]
-        ).all()
-
-        emails = [c.phone for c in contacts]
-
-        location_url = ""
-
-        if req.latitude and req.longitude:
-            location_url = f"https://maps.google.com/?q={req.latitude},{req.longitude}"
-
-        results = await emergency_service.send_alerts(emails, location_url)
-
-        return {
-            "message": "Emergency alerts sent",
-            "results": results
-        }
-
-    finally:
-        db.close()
+    location_url = ""
+    if req.latitude and req.longitude:
+        location_url = f"https://www.google.com/maps?q={req.latitude},{req.longitude}"
+    
+    # Send via Resend
+    results = await emergency_service.send_alerts(email_list, location_url)
+    return {"message": "Alerts sent from local storage", "results": results}
 
 # -------------------------
 # HISTORY

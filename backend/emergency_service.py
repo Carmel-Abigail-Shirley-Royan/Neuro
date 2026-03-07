@@ -1,39 +1,39 @@
 import os
 import resend
+from typing import List
 
 class EmergencyService:
     def __init__(self):
-        resend.api_key = os.getenv("RESEND_API_KEY")
+        # Using the API key from your successful test
+        self.api_key = "re_3i2PxAhA_32KKCawLEXfxQ5E74Lu97nqJ"
+        resend.api_key = self.api_key
+        print("✅ Resend Email Service Initialized")
 
-    async def send_alerts(self, email_list: list, location_url: str = ""):
+    async def send_alerts(self, email_list: List[str], location_url: str = ""):
+        """Sends an emergency email to your contacts."""
         results = []
-
-        if not email_list:
-            print("⚠️ No emergency contacts found")
-            return {"status": "no_contacts"}
-
-        try:
-            params = {
-                "from": "NeuroGuard <onboarding@resend.dev>",
-                "to": email_list,
-                "subject": "🚨 NEUROGUARD ALERT: Seizure Detected",
-                "html": f"""
-                <h2>🚨 Emergency Alert</h2>
-                <p>A seizure event has been detected by the NeuroGuard monitoring system.</p>
-                <p><strong>Location:</strong></p>
-                <p><a href="{location_url}">{location_url}</a></p>
-                <br>
-                <p>Please check on the patient immediately.</p>
-                """
-            }
-
-            response = resend.Emails.send(params)
-
-            print("✅ Emergency emails sent")
-            results.append(response)
-
-        except Exception as e:
-            print(f"❌ Resend Error: {e}")
-            results.append(str(e))
-
+        for email in email_list:
+            try:
+                # Using your verified 'from' and 'to' logic
+                response = resend.Emails.send({
+                    "from": "onboarding@resend.dev",
+                    "to": email, 
+                    "subject": "🚨 URGENT: NeuroGuard Seizure Alert",
+                    "html": f"""
+                        <div style="font-family: sans-serif; border: 2px solid red; padding: 20px;">
+                            <h2 style="color: red;">Emergency Alert Detected</h2>
+                            <p>NeuroGuard has detected a potential seizure event.</p>
+                            <p><strong>Action Required:</strong> Please check on the patient immediately.</p>
+                            {f'<p><strong>Location:</strong> <a href="{location_url}">View on Google Maps</a></p>' if location_url else ''}
+                            <hr>
+                            <p><small>Automated notification from the NeuroGuard System.</small></p>
+                        </div>
+                    """
+                })
+                results.append({"email": email, "status": "sent"})
+                print(f"✅ Alert successfully sent to {email}")
+            except Exception as e:
+                results.append({"email": email, "status": "failed", "error": str(e)})
+                print(f"❌ Failed to send to {email}: {e}")
+        
         return results
