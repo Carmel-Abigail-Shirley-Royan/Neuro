@@ -36,9 +36,13 @@ load_dotenv()
 firebase_creds = json.loads(os.getenv("FIREBASE_CREDENTIALS"))
 
 if not firebase_admin._apps:
-    cred = credentials.Certificate(firebase_creds)
+    cred_dict = credentials.Certificate(firebase_creds)
+    cred = credentials.Certificate(cred_dict)
     firebase_admin.initialize_app(cred)
-    
+    print("✅ Firebase initialized via Environment Variable")
+else:
+    print("❌ CRITICAL: FIREBASE_CREDENTIALS environment variable is missing!")
+
 db_firestore = firestore.client()
 
 # ─────────────────────────────────────────────
@@ -50,9 +54,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
+origins = [
+    "http://localhost:3000",      # Local React testing
+    "https://your-site.netlify.app", # YOUR ACTUAL NETLIFY URL (Change this!)
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
