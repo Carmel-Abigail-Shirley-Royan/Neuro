@@ -33,15 +33,15 @@ resend.api_key = os.getenv("RESEND_API_KEY")
 load_dotenv()
 
 
-firebase_creds = json.loads(os.getenv("FIREBASE_CREDENTIALS"))
+# Get Firebase JSON from environment variable
+firebase_json = os.getenv("FIREBASE_CREDENTIALS")
 
-if not firebase_admin._apps:
-    cred_dict = credentials.Certificate(firebase_creds)
-    cred = credentials.Certificate(cred_dict)
-    firebase_admin.initialize_app(cred)
-    print("✅ Firebase initialized via Environment Variable")
-else:
-    print("❌ CRITICAL: FIREBASE_CREDENTIALS environment variable is missing!")
+# Convert string to dictionary
+cred_dict = json.loads(firebase_json)
+
+# Initialize Firebase
+cred = credentials.Certificate(cred_dict)
+firebase_admin.initialize_app(cred)
 
 db_firestore = firestore.client()
 
