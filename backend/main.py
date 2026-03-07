@@ -23,7 +23,9 @@ from emergency_service import EmergencyService
 import json
 import os
 
-CONTACTS_FILE = "local_contacts.json"
+# This finds the exact folder where your main.py is sitting
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CONTACTS_FILE = os.path.join(BASE_DIR, "local_contacts.json")
 
 def load_local_contacts():
     if not os.path.exists(CONTACTS_FILE):
@@ -37,6 +39,7 @@ def load_local_contacts():
 def save_local_contacts(contacts):
     with open(CONTACTS_FILE, "w") as f:
         json.dump(contacts, f, indent=4)
+    print(f"💾 Saved to: {CONTACTS_FILE}")
 # Firebase Init
 firebase_json = os.getenv("FIREBASE_CREDENTIALS")
 
@@ -262,22 +265,29 @@ class EmergencyRequest(BaseModel):
 
 @app.post("/api/emergency/trigger")
 async def trigger_emergency(req: EmergencyRequest, user=Depends(get_current_user)):
-    # Load from the local JSON file instead of SQLite
+    # 1. Load contacts from your local JSON file
     contacts = load_local_contacts()
     
-    # Extract the emails (stored in the 'phone' field)
-    email_list = [c["phone"] for c in contacts]
+    # 2. Extract only the email addresses
+    # We use 'phone' because that is the key in your local_contacts.json
+    email_list = [c["phone"] for c in contacts if "phone" in c]
     
     if not email_list:
-        raise HTTPException(status_code=400, detail="No contacts found in local storage")
+        print("⚠️ No contacts found in local_contacts.json")
+        return {"message": "No contacts to notify", "results": []}
 
+    # 3. Create the Google Maps link
     location_url = ""
     if req.latitude and req.longitude:
         location_url = f"https://www.google.com/maps?q={req.latitude},{req.longitude}"
     
-    # Send via Resend
+    # 4. Pass the whole list to Resend
     results = await emergency_service.send_alerts(email_list, location_url)
-    return {"message": "Alerts sent from local storage", "results": results}
+    
+    return {
+        "message": f"Alerts processed for {len(email_list)} contacts",
+        "results": results
+    }
 
 # -------------------------
 # HISTORY
