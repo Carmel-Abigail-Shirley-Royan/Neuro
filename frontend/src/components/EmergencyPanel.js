@@ -169,7 +169,7 @@ export default function EmergencyPanel({ sensorData, location, isSeizure }) {
         </button>
       </form>
 
-    
+
     </div>
   );
 }
@@ -279,7 +279,8 @@ const styles = {
     fontFamily: 'var(--font-mono)',
     fontSize: 10,
     cursor: 'pointer',
-  },
+    bottom: '40px',
+},
   smsPreview: {
     display: 'flex',
     flexDirection: 'column',

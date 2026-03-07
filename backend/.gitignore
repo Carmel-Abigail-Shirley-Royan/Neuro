@@ -18,3 +18,5 @@ env/
 serviceAccountKey.json
 key/
 backend/serviceAccountKey.json
+
+backend/*.json

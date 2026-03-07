@@ -11,8 +11,27 @@ from datetime import datetime
 from typing import Optional, List
 from dotenv import load_dotenv
 
+# Load environment variables from .env file
+load_dotenv()
+
+# --- FIREBASE AUTH ADDITION ---
 import firebase_admin
-from firebase_admin import credentials, firestore, auth as firebase_admin_auth
+from firebase_admin import credentials, auth as firebase_admin_auth
+
+# Initialize Firebase (Render & Local Hybrid)
+firebase_json = os.getenv("FIREBASE_CREDENTIALS")
+if not firebase_admin._apps:
+    if firebase_json:
+        try:
+            cred_dict = json.loads(firebase_json)
+            firebase_admin.initialize_app(credentials.Certificate(cred_dict))
+            print("✅ Firebase initialized via Environment Variable")
+        except Exception as e:
+            print(f"❌ Firebase Init Error: {e}")
+    elif os.path.exists("serviceAccountKey.json"):
+        firebase_admin.initialize_app(credentials.Certificate("serviceAccountKey.json"))
+        print("✅ Firebase initialized via local file")
+# ------------------------------
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,26 +43,9 @@ from model_loader import SeizurePredictor
 from serial_reader import SerialReader
 from emergency_service import EmergencyService
 import auth
-import json
 import models
-import resend
-resend.api_key = os.getenv("RESEND_API_KEY")
 
-# Load environment variables from .env file
-load_dotenv()
-
-
-# Get Firebase JSON from environment variable
-firebase_json = os.getenv("FIREBASE_CREDENTIALS")
-
-# Convert string to dictionary
-cred_dict = json.loads(firebase_json)
-
-# Initialize Firebase
-cred = credentials.Certificate(cred_dict)
-firebase_admin.initialize_app(cred)
-
-db_firestore = firestore.client()
+print(f"📂 DATABASE PATH: {os.path.abspath('neuroguard.db')}")
 
 # ─────────────────────────────────────────────
 # App Initialization
@@ -54,14 +56,9 @@ app = FastAPI(
     version="1.0.0"
 )
 
-origins = [
-    "http://localhost:3000",      # Local React testing
-    "https://your-site.netlify.app", # YOUR ACTUAL NETLIFY URL (Change this!)
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -117,7 +114,6 @@ async def shutdown_event():
 # Serial Broadcast Loop
 # ─────────────────────────────────────────────
 async def serial_broadcast_loop():
-    db = SessionLocal()
     """Continuously read from serial port and broadcast to all WebSocket clients."""
     while True:
         try:
@@ -133,11 +129,7 @@ async def serial_broadcast_loop():
 
                 # Store to DB if seizure
                 if prediction == "Seizure Detected":
-                    # 1. Save to database (as you already do)
-    
-                    # 2. Trigger the Twilio Studio Flow automatically
-                    # For now, we use the verified doctor number from your screenshot
-                    await emergency_service.trigger_emergency_call("+916374134569", "Carmel")
+                    db = SessionLocal()
                     try:
                         event = models.SeizureEvent(
                             timestamp=datetime.utcnow(),
@@ -162,30 +154,15 @@ async def serial_broadcast_loop():
 
 def process_sensor_data(raw: dict) -> dict:
     """Convert raw analog voltages or pass-through values to proper units."""
-    # Data from User's Arduino Format:
-    # EMG (raw ADC), Heart (raw ADC), GyroX, GyroY, GyroZ, Temp (Celsius)
-
-    # Pulse: User sends 'Heart' as raw analogRead (0-1023).
-    # Mapping raw ADC to realistic BPM (e.g., 60 - 140 range)
     heart_raw = raw.get("pulse_raw", 512)
     pulse_bpm = int(60 + (heart_raw / 1023.0) * 80)
-
-    # Temperature: Requested to keep constant at 36.6°C
     temp_c = 36.6
-
-    # EMG: analog 0-1023 → millivolts
     emg_raw = raw.get("emg_voltage", 0)
     emg_mv = round((emg_raw / 1023.0) * 3300.0, 2)
-
-    # Gyroscope: raw values
     gyro_x = round(raw.get("gyro_x", 0), 2)
     gyro_y = round(raw.get("gyro_y", 0), 2)
     gyro_z = round(raw.get("gyro_z", 0), 2)
-
-    # Derived: vibration_intensity
     vibration_intensity = round(math.sqrt(gyro_x ** 2 + gyro_y ** 2 + gyro_z ** 2) / 1000.0, 4)
-
-    # SpO2
     spo2 = float(raw.get("spo2", 98.0))
 
     return {
@@ -244,23 +221,20 @@ async def login(req: LoginRequest):
     finally:
         db.close()
 
+# --- FIREBASE AUTH UPDATE ---
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     token = credentials.credentials
     try:
-        # This verifies the token directly with Google/Firebase
+        # Verify directly with Firebase Admin SDK
         decoded_token = firebase_admin_auth.verify_id_token(token)
-        # Return a dictionary that matches what your endpoints expect
         return {
             "uid": decoded_token["uid"],
-            "email": decoded_token.get("email"),
-            "user_id": decoded_token["uid"] # Reusing uid for your SQLite user_id field
+            "user_id": decoded_token["uid"] 
         }
     except Exception as e:
         print(f"Firebase Auth Error: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired Firebase token"
-        )
+        raise HTTPException(status_code=401, detail="Invalid Firebase token")
+# ----------------------------
 
 # ─────────────────────────────────────────────
 # Sensor Endpoints
@@ -269,7 +243,6 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
 async def get_latest_sensor(user=Depends(get_current_user)):
     data = serial_reader.last_data
     if not data:
-        # Return simulated data if no serial connection
         import random
         data = {
             "pulse_voltage": random.randint(400, 700),
@@ -292,9 +265,8 @@ class ContactRequest(BaseModel):
 async def get_contacts(user=Depends(get_current_user)):
     db = SessionLocal()
     try:
-        # We use 'uid' because it is a string from Firebase
         contacts = db.query(models.EmergencyContact).filter(
-            models.EmergencyContact.user_id == user["uid"]
+            models.EmergencyContact.user_id == user["user_id"]
         ).all()
         return [{"id": c.id, "name": c.name, "phone": c.phone} for c in contacts]
     finally:
@@ -305,7 +277,7 @@ async def add_contact(req: ContactRequest, user=Depends(get_current_user)):
     db = SessionLocal()
     try:
         contact = models.EmergencyContact(
-            user_id=user["uid"], # Use the Firebase UID
+            user_id=user["user_id"],
             name=req.name,
             phone=req.phone
         )
@@ -315,7 +287,6 @@ async def add_contact(req: ContactRequest, user=Depends(get_current_user)):
         return {"id": contact.id, "name": contact.name, "phone": contact.phone}
     finally:
         db.close()
-        
 
 @app.delete("/api/contacts/{contact_id}")
 async def delete_contact(contact_id: int, user=Depends(get_current_user)):
@@ -341,76 +312,38 @@ class EmergencyRequest(BaseModel):
     longitude: Optional[float] = None
     sensor_data: Optional[dict] = None
 
-# ─────────────────────────────────────────────
-# Updated Emergency Trigger in main.py
-# ─────────────────────────────────────────────
-import resend
-import os
-
-# Ensure this is in your .env file
-resend.api_key = os.getenv("RESEND_API_KEY")
-
 @app.post("/api/emergency/trigger")
 async def trigger_emergency(req: EmergencyRequest, user=Depends(get_current_user)):
     db = SessionLocal()
     try:
-        # Fetch contacts for the logged-in user
         contacts = db.query(models.EmergencyContact).filter(
-            models.EmergencyContact.user_id == user["uid"]
+            models.EmergencyContact.user_id == user["user_id"]
         ).all()
-
-        if not contacts:
-            return {"status": "error", "message": "No contacts found"}
-
-        # Extract user name safely to avoid KeyError
-        user_name = user.get('name') or user.get('display_name') or "NeuroGuard User"
-
-        for contact in contacts:
-            # 1. Clean the email string to remove hidden spaces
-            target_email = str(contact.phone).strip() 
-
-            # 2. Add a simple check to skip invalid entries
-            if "@" not in target_email:
-                print(f"[Skip] '{target_email}' is not a valid email.")
-                continue
-
-            html_body = f"""
-                <div style="font-family: sans-serif; padding: 20px; border: 2px solid #ff3366; border-radius: 10px;">
-                    <h2 style="color: #ff3366;">🚨 NEUROGUARD ALERT</h2>
-                    <p>A seizure has been detected for <b>{user_name}</b>.</p>
-                    <p><a href="https://www.google.com/maps?q={req.latitude},{req.longitude}">View Location</a></p>
-                </div>
-            """
-
-            # 3. Use the cleaned variable here
-            resend.Emails.send({
-                "from": "NeuroGuard <onboarding@resend.dev>", 
-                "to": [target_email], 
-                "subject": "🚨 EMERGENCY: Seizure Detected",
-                "html": html_body
-            })
-
-        return {"status": "success", "message": "Emergency emails dispatched"}
-    
-    except Exception as e:
-        print(f"Resend Error: {e}")
-        return {"status": "error", "message": str(e)}
+        phones = [c.phone for c in contacts]
+        location_url = ""
+        if req.latitude and req.longitude:
+            location_url = f"https://maps.google.com/?q={req.latitude},{req.longitude}"
+        results = await emergency_service.send_alerts(phones, location_url)
+        return {"message": "Emergency alerts sent", "results": results}
     finally:
         db.close()
 
 # ─────────────────────────────────────────────
 # History
 # ─────────────────────────────────────────────
+# In main.py, your History endpoint should be this simple:
 @app.get("/api/history")
 async def get_history(user=Depends(get_current_user)):
     db = SessionLocal()
     try:
+        # Grabs ALL 112 rows because they don't have UIDs yet
         events = db.query(models.SeizureEvent).order_by(
             models.SeizureEvent.timestamp.desc()
-        ).limit(100).all()
+        ).all()
+        
         return [{
             "id": e.id,
-            "timestamp": e.timestamp.isoformat(),
+            "timestamp": str(e.timestamp), # Convert string timestamp for JSON
             "pulse": e.pulse,
             "temperature": e.temperature,
             "emg": e.emg,
@@ -428,15 +361,9 @@ async def get_history(user=Depends(get_current_user)):
 @app.websocket("/ws/sensor")
 async def websocket_sensor(websocket: WebSocket):
     await manager.connect(websocket)
-    
-    # NEW: Immediately send the last known data to the dashboard
-    if serial_reader.last_data:
-        processed = process_sensor_data(serial_reader.last_data)
-        await websocket.send_json(processed)
-        
     try:
         while True:
-            await websocket.receive_text()
+            data = await websocket.receive_text()
             try:
                 msg = json.loads(data)
                 if msg.get("type") == "location":
@@ -449,13 +376,11 @@ async def websocket_sensor(websocket: WebSocket):
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
-
 # ─────────────────────────────────────────────
 # Model Info
 # ─────────────────────────────────────────────
 @app.get("/api/model/info")
 async def model_info():
-    """Return feature spec loaded from the pkl file."""
     return {
         "loaded": predictor.is_loaded(),
         "feature_names": predictor.get_feature_names(),
@@ -474,9 +399,3 @@ async def health():
         "feature_names": predictor.get_feature_names(),
         "timestamp": datetime.utcnow().isoformat()
     }
-
-if __name__ == "__main__":
-    import uvicorn
-    import os
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
