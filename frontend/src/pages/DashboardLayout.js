@@ -143,7 +143,7 @@ export default function DashboardLayout() {
 const styles = {
   root: {
     display: 'flex',
-    height: '100vh',
+    minHeight: '100vh',
     overflow: 'hidden',
   },
 
@@ -189,8 +189,31 @@ const styles = {
     borderRight: '1px solid var(--border)',
     display: 'flex',
     flexDirection: 'column',
-    padding: '20px 0',
+    // Use fixed height and ensure it is on top
+    height: '100vh',
+    position: 'sticky',
+    top: 0,
+    padding: '20px 0 0',
     zIndex: 300,
+  },
+
+  nav: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+    padding: '10px',
+    flex: 1,
+    // Add this to make ONLY the menu items scroll if they are too long
+    overflowY: 'auto', 
+  },
+
+  userArea: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: 20,
+    borderTop: '1px solid var(--border)',
+    background: 'var(--bg-secondary)', // Keep background solid so it covers content behind it
+    marginTop: 'auto', // Pushes it to the very bottom of the sidebar
   },
 
   sidebarHidden: {
@@ -233,13 +256,6 @@ const styles = {
     color: 'var(--text-muted)',
   },
 
-  nav: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 4,
-    padding: '10px',
-    flex: 1,
-  },
 
   navItem: {
     padding: '10px',
@@ -255,12 +271,6 @@ const styles = {
 
   navIcon: { marginRight: 8 },
 
-  userArea: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: 20,
-    borderTop: '1px solid var(--border)',
-  },
 
   avatar: {
     width: 32,

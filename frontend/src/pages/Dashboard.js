@@ -220,8 +220,10 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     height: '100%',
-    overflow: 'auto',
+    minHeight: '100vh',
+    overflow: 'visible',
     padding: 20,
+    paddingBottom: 100,
     gap: 16,
   },
   alertBanner: {
