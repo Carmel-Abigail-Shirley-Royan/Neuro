@@ -223,7 +223,7 @@ const styles = {
     height: "auto",
     overflowY: "auto",    // allow scrolling
     padding: 20,
-    paddingBottom: 120,
+    paddingBottom: 60,
     gap: 16
   },
   alertBanner: {
@@ -266,7 +266,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: 16,
-    flex: 1,
+    flex: '0 1 auto',
   },
   cardsRow: {
     display: 'grid',

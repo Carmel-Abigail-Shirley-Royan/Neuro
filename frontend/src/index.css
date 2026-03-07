@@ -54,12 +54,11 @@ body {
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  padding-bottom: 0px;
+  padding-bottom: 0px !important;
 }
 
 #root {
   height: auto;           /* Change from 100% to auto */
-  min-height: 100vh;
 }
 
 /* Scrollbar */

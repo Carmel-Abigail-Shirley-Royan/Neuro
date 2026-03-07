@@ -188,7 +188,7 @@ const styles = {
   },
 
   sidebar: {
-    width: 220,
+    width: 230,
     background: "var(--bg-secondary)",
     borderRight: "1px solid var(--border)",
     display: "flex",
@@ -197,7 +197,8 @@ const styles = {
     position: "fixed",
     left: 0,
     top: 0,
-    zIndex: 300
+    zIndex: 300,
+    paddingTop: "20px",
   },
 
   nav: {
@@ -215,7 +216,7 @@ const styles = {
     padding: "15px 20px",
     borderTop: "1px solid var(--border)",
     marginTop: "auto",
-    background: "var(--bg-secondary)"
+    background: "#0a1f3a",
   },
 
   content: {
@@ -292,15 +293,23 @@ const styles = {
 
   userInfo: { flex: 1, marginLeft: 8 },
 
-  userName: { fontSize: 12 },
-
-  userEmail: { fontSize: 9, color: 'var(--text-muted)' },
+  userName: { 
+    fontSize: 13, 
+    fontWeight: 700, 
+    color: '#ffffff' // Change to pure white for high visibility
+  },
+  userEmail: { 
+    fontSize: 10, 
+    color: 'var(--cyan)', // Use the bright cyan for the email
+    opacity: 0.9 
+  },
 
   logoutBtn: {
     background: 'none',
     border: 'none',
-    color: 'var(--text-muted)',
+    color: 'var(--red)', // Make logout icon stand out
     cursor: 'pointer',
+    fontSize: 18,
   },
 
   main: (mobile) => ({
