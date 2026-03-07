@@ -189,11 +189,8 @@ const styles = {
     borderRight: '1px solid var(--border)',
     display: 'flex',
     flexDirection: 'column',
-    // Use fixed height and ensure it is on top
-    height: '100vh',
-    position: 'sticky',
-    top: 0,
-    padding: '20px 0 0',
+    height: '100vh',           // Keep sidebar full height
+    position: 'fixed',         // Lock it to the side
     zIndex: 300,
   },
 
@@ -202,20 +199,18 @@ const styles = {
     flexDirection: 'column',
     gap: 4,
     padding: '10px',
-    flex: 1,
-    // Add this to make ONLY the menu items scroll if they are too long
-    overflowY: 'auto', 
+    flex: 1,                   // This pushes the user area down
+    overflowY: 'auto',         // If menu is long, only menu scrolls
   },
 
   userArea: {
     display: 'flex',
     alignItems: 'center',
-    padding: 20,
+    padding: '15px 20px',
     borderTop: '1px solid var(--border)',
-    background: 'var(--bg-secondary)', // Keep background solid so it covers content behind it
-    marginTop: 'auto', // Pushes it to the very bottom of the sidebar
+    marginTop: 'auto',         // PUSHES DR. SMITH TO THE BOTTOM
+    background: 'var(--bg-secondary)', 
   },
-
   sidebarHidden: {
     transform: 'translateX(-100%)',
     position: 'absolute',

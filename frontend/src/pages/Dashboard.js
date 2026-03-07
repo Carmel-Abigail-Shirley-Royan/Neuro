@@ -216,14 +216,14 @@ function SensorCard({ label, value, unit, icon, color, normal }) {
 }
 
 const styles = {
-  page: {
+ page: {
     display: 'flex',
     flexDirection: 'column',
-    height: '100%',
-    minHeight: '100vh',
-    overflow: 'visible',
+    height: 'auto',             // Change from 100% to auto
+    minHeight: '100vh',        // Ensures it takes full screen
+    overflowY: 'scroll',       // Force the scroll to work
     padding: 20,
-    paddingBottom: 100,
+    paddingBottom: 120,        // Add big space at the bottom for the button
     gap: 16,
   },
   alertBanner: {
