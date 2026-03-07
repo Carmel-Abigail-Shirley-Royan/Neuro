@@ -11,6 +11,8 @@ export default function EmergencyPanel({ sensorData, location, isSeizure }) {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
 
+  const PHONE_NUMBER = "6374134569";
+
   // 1. Fetch contacts only when the user is authenticated
   useEffect(() => {
     if (user?.uid) {
@@ -71,8 +73,8 @@ export default function EmergencyPanel({ sensorData, location, isSeizure }) {
   };
 
   // 4. Native Dialer Logic (Normal Logic)
-  const initiateNativeCall = (phoneNumber) => {
-    window.location.href = `tel:${phoneNumber}`;
+  const initiateNativeCall = (PHONE_NUMBER) => {
+    window.location.href = `tel:${PHONE_NUMBER}`;
   };
 
   const handleEmergency = async () => {
