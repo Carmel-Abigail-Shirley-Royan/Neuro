@@ -61,7 +61,6 @@ app.add_middleware(
     allow_origins=[
         "https://neuroguard-2.netlify.app", # Your Netlify URL
         "http://localhost:3000",             # For local testing
-        "http://localhost:8000",
     ],
     allow_credentials=True,
     allow_methods=["*"],
