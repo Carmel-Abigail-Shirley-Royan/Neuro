@@ -1,150 +1,181 @@
 import React, { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
-import { getContacts, addContact, deleteContact, triggerEmergency } from '../services/api';
+import { triggerEmergency } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 export default function EmergencyPanel({ sensorData, location, isSeizure }) {
+
   const { user } = useAuth();
-  const [contacts, setContacts] = useState([]);
+
+  // Load contacts from browser storage
+  const [contacts, setContacts] = useState(() => {
+    const saved = localStorage.getItem("contacts");
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
   const [sending, setSending] = useState(false);
 
   const PHONE_NUMBER = "6374134569";
 
-  // 1. Fetch contacts only when the user is authenticated
-  useEffect(() => {
-    if (user?.uid) {
-      loadContacts();
-    } else {
-      // Clear contacts on logout to prevent state leak
-      setContacts([]);
-    }
-  }, [user]);
-
-  const loadContacts = async () => {
-    try {
-      const data = await getContacts();
-      setContacts(data);
-    } catch (e) {
-      console.error('[Contacts] Load error:', e);
-    }
-  };
-
-  // 2. Auto-trigger emergency when seizure detected
+  // Detect seizure and auto trigger emergency
   const prevSeizure = useRef(false);
+
   useEffect(() => {
-    if (isSeizure && !prevSeizure.current && contacts.length > 0) {
+
+    if (isSeizure && !prevSeizure.current) {
       handleEmergency();
     }
+
     prevSeizure.current = isSeizure;
-  }, [isSeizure, contacts.length]);
 
-  const handleAdd = async (e) => {
+  }, [isSeizure]);
+
+
+
+  // Add contact
+  const handleAdd = (e) => {
+
     e.preventDefault();
-    if (!name || !phone) return;
-    setLoading(true);
-    try {
-      const contact = await addContact(name, phone);
-      setContacts(prev => [...prev, contact]);
-      setName('');
-      setPhone('');
-      toast.success(`Contact added: ${name}`);
-    } catch (e) {
-      toast.error('Failed to add contact');
-    } finally {
-      setLoading(false);
-    }
+
+    if (!name || !email) return;
+
+    const newContact = {
+      id: Date.now(),
+      name: name,
+      email: email
+    };
+
+    const updatedContacts = [...contacts, newContact];
+
+    setContacts(updatedContacts);
+
+    localStorage.setItem("contacts", JSON.stringify(updatedContacts));
+
+    setName('');
+    setEmail('');
+
+    toast.success(`Contact added: ${name}`);
   };
 
-  // 3. Delete with Dustbin icon and Confirmation Alert
-  const handleDelete = async (id, contactName) => {
-    const confirmDelete = window.confirm(`Are you sure you want to delete ${contactName}?`);
-    if (confirmDelete) {
-      try {
-        await deleteContact(id);
-        setContacts(prev => prev.filter(c => c.id !== id));
-        toast.success('Contact removed');
-      } catch (e) {
-        toast.error('Failed to remove contact');
-      }
-    }
+
+
+  // Delete contact
+  const handleDelete = (id, contactName) => {
+
+    if (!window.confirm(`Delete ${contactName}?`)) return;
+
+    const updated = contacts.filter(c => c.id !== id);
+
+    setContacts(updated);
+
+    localStorage.setItem("contacts", JSON.stringify(updated));
+
+    toast.success("Contact removed");
+
   };
 
-  // 4. Native Dialer Logic (Normal Logic)
-  const initiateNativeCall = (PHONE_NUMBER) => {
+
+
+  // Call hardcoded emergency number
+  const initiateNativeCall = () => {
+
     window.location.href = `tel:${PHONE_NUMBER}`;
+
   };
 
+
+
+  // Emergency trigger
   const handleEmergency = async () => {
-  if (sending) return;
 
-  setSending(true);
+    if (sending) return;
 
-  try {
-    // Always call the hardcoded number
-    initiateNativeCall(PHONE_NUMBER);
+    setSending(true);
 
-    // Send backend alert (email/SMS)
-    await triggerEmergency(location?.lat, location?.lng, sensorData);
+    try {
 
-    toast.success('Emergency alert and call initiated!', {
-      style: { 
-        background: '#1a0010',
-        border: '1px solid var(--red)',
-        color: '#ff3366'
-      }
-    });
+      // Call emergency number
+      initiateNativeCall();
 
-  } catch (e) {
+      // Send backend emergency alert
+      await triggerEmergency(location?.lat, location?.lng, sensorData);
 
-    toast.error(
-      'Dispatch failed: ' + (e.response?.data?.detail || e.message)
-    );
+      toast.success("Emergency alert and call initiated!", {
+        style: {
+          background: '#1a0010',
+          border: '1px solid var(--red)',
+          color: '#ff3366'
+        }
+      });
 
-  } finally {
+    } catch (e) {
 
-    setSending(false);
+      toast.error(
+        "Dispatch failed: " + (e.response?.data?.detail || e.message)
+      );
 
-  }
-};
+    } finally {
+
+      setSending(false);
+
+    }
+
+  };
+
+
+
   return (
+
     <div style={styles.panel}>
+
       <div style={styles.header}>
         <span style={styles.headerIcon}>🚨</span>
         <span style={styles.headerTitle}>EMERGENCY SYSTEM</span>
       </div>
 
+
       <button
         style={{
           ...styles.triggerBtn,
-          ...(sending ? styles.triggerBtnLoading : {}),
+          ...(sending ? styles.triggerBtnLoading : {})
         }}
         onClick={handleEmergency}
-        disabled={sending || contacts.length === 0}
+        disabled={sending}
       >
-        {sending ? 'DISPATCHING...' : '⚡ TRIGGER EMERGENCY'}
+        {sending ? "DISPATCHING..." : "⚡ TRIGGER EMERGENCY"}
       </button>
 
+
+
       <div style={styles.section}>
-        <div style={styles.sectionLabel}>EMERGENCY CONTACTS ({contacts.length})</div>
+
+        <div style={styles.sectionLabel}>
+          EMERGENCY CONTACTS ({contacts.length})
+        </div>
+
         <div style={styles.contactList}>
+
           {contacts.length === 0 && (
             <div style={styles.empty}>No contacts added yet</div>
           )}
+
           {contacts.map(c => (
+
             <div key={c.id} style={styles.contactItem}>
+
               <div style={styles.contactIcon}>👤</div>
+
               <div style={styles.contactInfo}>
                 <div style={styles.contactName}>{c.name}</div>
-                <div style={styles.contactPhone}>{c.phone}</div>
+                <div style={styles.contactPhone}>{c.email}</div>
               </div>
 
               <button
                 style={styles.callIconBtn}
-                onClick={() => initiateNativeCall(PHONE_NUMBER)}
-                title="Call Contact"
+                onClick={initiateNativeCall}
+                title="Call Emergency"
               >
                 📞
               </button>
@@ -156,38 +187,53 @@ export default function EmergencyPanel({ sensorData, location, isSeizure }) {
               >
                 🗑️
               </button>
+
             </div>
+
           ))}
+
         </div>
+
       </div>
 
+
+
       <form style={styles.addForm} onSubmit={handleAdd}>
+
         <div style={styles.sectionLabel}>ADD EMERGENCY EMAIL</div>
+
         <input
           style={styles.input}
           type="text"
-          placeholder="Contact name (e.g. Doctor)"
+          placeholder="Contact name (Doctor / Family)"
           value={name}
           onChange={e => setName(e.target.value)}
         />
+
         <input
           style={styles.input}
-          type="email" // Changed type to email for browser validation
+          type="email"
           placeholder="email@example.com"
-          value={phone} // Still using the 'phone' variable name
-          onChange={e => setPhone(e.target.value)}
+          value={email}
+          onChange={e => setEmail(e.target.value)}
         />
-        <button style={styles.addBtn} type="submit" disabled={loading}>
-          {loading ? '...' : '+ ADD EMAIL CONTACT'}
+
+        <button style={styles.addBtn} type="submit">
+          + ADD EMAIL CONTACT
         </button>
+
       </form>
 
-
     </div>
+
   );
+
 }
 
+
+
 const styles = {
+
   panel: {
     background: 'var(--bg-card)',
     border: '1px solid var(--border)',
@@ -197,22 +243,26 @@ const styles = {
     flexDirection: 'column',
     gap: 14,
     height: '100%',
-    overflowY: 'auto',
+    overflowY: 'auto'
   },
+
   header: {
     display: 'flex',
     alignItems: 'center',
     gap: 8,
     paddingBottom: 12,
-    borderBottom: '1px solid var(--border)',
+    borderBottom: '1px solid var(--border)'
   },
+
   headerIcon: { fontSize: 16 },
+
   headerTitle: {
     fontFamily: 'var(--font-mono)',
     fontSize: 11,
     letterSpacing: '0.1em',
-    color: 'var(--red)',
+    color: 'var(--red)'
   },
+
   triggerBtn: {
     width: '100%',
     padding: '11px',
@@ -223,24 +273,35 @@ const styles = {
     fontFamily: 'var(--font-mono)',
     fontSize: 11,
     letterSpacing: '0.1em',
-    cursor: 'pointer',
-    transition: 'all 0.2s',
+    cursor: 'pointer'
   },
-  triggerBtnLoading: { opacity: 0.6, cursor: 'not-allowed' },
-  section: { display: 'flex', flexDirection: 'column', gap: 8 },
+
+  triggerBtnLoading: {
+    opacity: 0.6,
+    cursor: 'not-allowed'
+  },
+
+  section: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8
+  },
+
   sectionLabel: {
     fontFamily: 'var(--font-mono)',
     fontSize: 9,
     color: 'var(--text-muted)',
-    letterSpacing: '0.1em',
+    letterSpacing: '0.1em'
   },
+
   contactList: {
     display: 'flex',
     flexDirection: 'column',
     gap: 6,
     maxHeight: 200,
-    overflowY: 'auto',
+    overflowY: 'auto'
   },
+
   contactItem: {
     display: 'flex',
     alignItems: 'center',
@@ -248,32 +309,55 @@ const styles = {
     padding: '8px 10px',
     background: 'rgba(0,212,255,0.04)',
     border: '1px solid var(--border)',
-    borderRadius: 6,
+    borderRadius: 6
   },
+
   contactIcon: { fontSize: 14 },
+
   contactInfo: { flex: 1 },
-  contactName: { fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600 },
-  contactPhone: { fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' },
+
+  contactName: {
+    fontFamily: 'var(--font-body)',
+    fontSize: 12,
+    fontWeight: 600
+  },
+
+  contactPhone: {
+    fontFamily: 'var(--font-mono)',
+    fontSize: 10,
+    color: 'var(--text-muted)'
+  },
+
   callIconBtn: {
     background: 'none',
     border: 'none',
     cursor: 'pointer',
     fontSize: '14px',
-    color: 'var(--green)',
-    padding: '4px',
+    color: 'var(--green)'
   },
+
   deleteBtn: {
     background: 'none',
     border: 'none',
-    color: 'rgba(255, 51, 102, 0.7)',
+    color: 'rgba(255,51,102,0.7)',
     cursor: 'pointer',
-    fontSize: '14px',
-    padding: '4px',
-    display: 'flex',
-    alignItems: 'center',
+    fontSize: '14px'
   },
-  empty: { fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', padding: 12 },
-  addForm: { display: 'flex', flexDirection: 'column', gap: 8 },
+
+  empty: {
+    fontFamily: 'var(--font-mono)',
+    fontSize: 10,
+    color: 'var(--text-muted)',
+    textAlign: 'center',
+    padding: 12
+  },
+
+  addForm: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8
+  },
+
   input: {
     background: 'rgba(0,212,255,0.04)',
     border: '1px solid var(--border)',
@@ -281,8 +365,9 @@ const styles = {
     padding: '8px 10px',
     color: 'var(--text-primary)',
     fontSize: 12,
-    outline: 'none',
+    outline: 'none'
   },
+
   addBtn: {
     padding: '8px',
     background: 'rgba(0,212,255,0.1)',
@@ -291,17 +376,7 @@ const styles = {
     color: 'var(--cyan)',
     fontFamily: 'var(--font-mono)',
     fontSize: 10,
-    cursor: 'pointer',
-    bottom: '40px',
-},
-  smsPreview: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 6,
-    padding: '10px',
-    background: 'rgba(0,0,0,0.3)',
-    borderRadius: 6,
-    border: '1px solid var(--border)',
-  },
-  smsText: { fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', lineHeight: 1.6 },
+    cursor: 'pointer'
+  }
+
 };
