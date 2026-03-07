@@ -216,15 +216,15 @@ function SensorCard({ label, value, unit, icon, color, normal }) {
 }
 
 const styles = {
- page: {
-    display: 'flex',
-    flexDirection: 'column',
-    height: 'auto',             // Change from 100% to auto
-    minHeight: '100vh',        // Ensures it takes full screen
-    overflowY: 'scroll',       // Force the scroll to work
+  page: {
+    display: "flex",
+    flexDirection: "column",
+    minHeight: "100vh",   // full page height
+    height: "auto",
+    overflowY: "auto",    // allow scrolling
     padding: 20,
-    paddingBottom: 120,        // Add big space at the bottom for the button
-    gap: 16,
+    paddingBottom: 120,
+    gap: 16
   },
   alertBanner: {
     display: 'flex',

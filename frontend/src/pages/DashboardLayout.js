@@ -183,33 +183,46 @@ const styles = {
     cursor: 'pointer',
   },
 
+  layout: {
+    display: "flex"
+  },
+
   sidebar: {
     width: 220,
-    background: 'var(--bg-secondary)',
-    borderRight: '1px solid var(--border)',
-    display: 'flex',
-    flexDirection: 'column',
-    height: '100vh',           // Keep sidebar full height
-    position: 'fixed',         // Lock it to the side
-    zIndex: 300,
+    background: "var(--bg-secondary)",
+    borderRight: "1px solid var(--border)",
+    display: "flex",
+    flexDirection: "column",
+    height: "100vh",
+    position: "fixed",
+    left: 0,
+    top: 0,
+    zIndex: 300
   },
 
   nav: {
-    display: 'flex',
-    flexDirection: 'column',
+    display: "flex",
+    flexDirection: "column",
     gap: 4,
-    padding: '10px',
-    flex: 1,                   // This pushes the user area down
-    overflowY: 'auto',         // If menu is long, only menu scrolls
+    padding: "10px",
+    flex: 1,
+    overflowY: "auto"
   },
 
   userArea: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: '15px 20px',
-    borderTop: '1px solid var(--border)',
-    marginTop: 'auto',         // PUSHES DR. SMITH TO THE BOTTOM
-    background: 'var(--bg-secondary)', 
+    display: "flex",
+    alignItems: "center",
+    padding: "15px 20px",
+    borderTop: "1px solid var(--border)",
+    marginTop: "auto",
+    background: "var(--bg-secondary)"
+  },
+
+  content: {
+    marginLeft: 220,
+    width: "100%",
+    minHeight: "100vh",
+    overflowY: "auto"
   },
   sidebarHidden: {
     transform: 'translateX(-100%)',
